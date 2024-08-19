@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Attendance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .add-member {
+            margin-bottom: 20px;
+        }
+
+        .add-member input {
+            padding: 10px;
+            font-size: 16px;
+            width: calc(100% - 22px);
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            th, td {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            .btn {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            .add-member input {
+                font-size: 14px;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Class Attendance</h1>
+
+<div class="add-member">
+    <input type="text" id="newMemberName" placeholder="Enter new member name">
+    <button class="btn" onclick="addMember()">Add Member</button>
+</div>
+
+<table id="attendanceTable">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Date</th>
+            <th>Attendance</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Rows will be added dynamically -->
+    </tbody>
+</table>
+
+<button class="btn" onclick="markAllPresent()">Mark All Present</button>
+<button class="btn" onclick="downloadExcel()">Save as Excel</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+    let memberNames = [
+    "Abinaya.R", "Anugraha.C", "Atchaya.c", "Bavadharani.s", "Bhuvanoviyam.S.T",
+        "Dharani.S.S", "Dhivya.R", "Durgasri.K", "Gopika.K", "Guruvarsheenee",
+        "Harini.S", "Hemapriya.M", "Janani.S", "Jayarethna.D", "Jeevitha.V",
+        "Jenifer.M", "Kamatchi.R", "Kaviy.K", "Keerthana.G", "Lingaruna.S",
+        "Logeshwari.K", "Monika.R", "Nandhini.A", "Nivetha.R", "Padma.A.S",
+        "Princey.A", "Riswana.S", "Sabitha.B", "Sangeetha.P", "Sankari.M",
+        "Saraswathi.A", "Saraswathi.K", "Sarika.S", "Shalini.V", "Shanmugapriya.N",
+        "Sindhuja.B", "Sivapriya.A", "Sivasankari.M", "Sivasankari.P", "Sivasri.G",
+        "Sona.M.V", "Sona.R", "Srinirjarani.S", "Subikshapriya.R", "Sugadharshini.S",
+        "Suhasini.L", "Swetha.M", "Thailammai.B", "Varshanthini.T", "Varshini.S",
+        "Varthini.R", "Vishali.R"
+    ];
+
+    function populateTable() {
+        const table = document.getElementById("attendanceTable").getElementsByTagName('tbody')[0];
+        table.innerHTML = ''; // Clear the table
+
+        memberNames.sort().forEach(name => {
+            const row = table.insertRow();
+            const nameCell = row.insertCell(0);
+            const dateCell = row.insertCell(1);
+            const attendanceCell = row.insertCell(2);
+            
+            nameCell.textContent = name;
+            dateCell.innerHTML = `<input type="date" value="${new Date().toISOString().slice(0, 10)}" readonly>`;
+            attendanceCell.innerHTML = `
+                <label><input type="radio" name="attendance_${name}" value="Present" checked> P</label>
+                <label><input type="radio" name="attendance_${name}" value="Absent"> A</label>`;
+        });
+    }
+
+    function addMember() {
+        const newMemberName = document.getElementById('newMemberName').value.trim();
+        if (newMemberName && !memberNames.includes(newMemberName)) {
+            memberNames.push(newMemberName);
+            populateTable(); // Re-populate the table to maintain alphabetical order
+        }
+        document.getElementById('newMemberName').value = ''; // Clear input field
+    }
+
+    function markAllPresent() {
+        const radios = document.querySelectorAll('input[type="radio"][value="Present"]');
+        radios.forEach(radio => radio.checked = true);
+    }
+
+    function downloadExcel() {
+        const table = document.getElementById("attendanceTable");
+        const workbook = XLSX.utils.book_new();
+        const worksheetData = [];
+        const date = new Date().toISOString().slice(0, 10);
+
+        // Add header row with the date
+        worksheetData.push(["Name", `Date (${date})`, "Attendance"]);
+
+        // Separate present and absent members
+        const presentMembers = [];
+        const absentMembers = [];
+
+        // Iterate over each row in the table body
+        const rows = table.getElementsByTagName('tbody')[0].rows;
+        for (let i = 0; i < rows.length; i++) {
+            const name = rows[i].cells[0].innerText;
+            const attendance = rows[i].querySelector('input[name="attendance_' + name + '"]:checked').value;
+            if (attendance === "Present") {
+                presentMembers.push([name, date, attendance]);
+            } else {
+                absentMembers.push([name, date, attendance]);
+            }
+        }
+
+        // Add present members first, followed by absent members
+        worksheetData.push(...presentMembers);
+        worksheetData.push(...absentMembers);
+
+        const presentCount = presentMembers.length;
+    const absentCount = absentMembers.length;
+    worksheetData.push([]); // Empty row for separation
+    worksheetData.push(["Total Present", presentCount]);
+    worksheetData.push(["Total Absent", absentCount]);
+
+        // Create the worksheet and append it to the workbook
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
+
+        // Save the workbook as an Excel file
+        XLSX.writeFile(workbook, `attendance_${date}.xlsx`);
+    }
+
+    window.onload = populateTable;
+</script>
+
+</body>
+</html>
