@@ -54,6 +54,10 @@
             margin-bottom: 10px;
         }
 
+        .absent-label {
+            color: red;
+        }
+
         @media (max-width: 600px) {
             th, td {
                 font-size: 14px;
@@ -100,7 +104,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
     let memberNames = [
-    "Abinaya.R", "Anugraha.C", "Atchaya.c", "Bavadharani.s", "Bhuvanoviyam.S.T",
+        "Abinaya.R", "Anugraha.C", "Atchaya.c", "Bavadharani.s", "Bhuvanoviyam.S.T",
         "Dharani.S.S", "Dhivya.R", "Durgasri.K", "Gopika.K", "Guruvarsheenee",
         "Harini.S", "Hemapriya.M", "Janani.S", "Jayarethna.D", "Jeevitha.V",
         "Jenifer.M", "Kamatchi.R", "Kaviy.K", "Keerthana.G", "Lingaruna.S",
@@ -126,8 +130,8 @@
             nameCell.textContent = name;
             dateCell.innerHTML = `<input type="date" value="${new Date().toISOString().slice(0, 10)}" readonly>`;
             attendanceCell.innerHTML = `
-                <label><input type="radio" name="attendance_${name}" value="Present" checked> P</label>
-                <label><input type="radio" name="attendance_${name}" value="Absent"> A</label>`;
+                <label><input type="radio" name="attendance_${name}" value="Present" checked> Present</label>
+                <label class="absent-label"><input type="radio" name="attendance_${name}" value="Absent"> Absent</label>`;
         });
     }
 
@@ -154,31 +158,20 @@
         // Add header row with the date
         worksheetData.push(["Name", `Date (${date})`, "Attendance"]);
 
-        // Separate present and absent members
-        const presentMembers = [];
-        const absentMembers = [];
-
         // Iterate over each row in the table body
         const rows = table.getElementsByTagName('tbody')[0].rows;
         for (let i = 0; i < rows.length; i++) {
             const name = rows[i].cells[0].innerText;
             const attendance = rows[i].querySelector('input[name="attendance_' + name + '"]:checked').value;
-            if (attendance === "Present") {
-                presentMembers.push([name, date, attendance]);
-            } else {
-                absentMembers.push([name, date, attendance]);
-            }
+            worksheetData.push([name, date, attendance]);
         }
 
-        // Add present members first, followed by absent members
-        worksheetData.push(...presentMembers);
-        worksheetData.push(...absentMembers);
-
-        const presentCount = presentMembers.length;
-    const absentCount = absentMembers.length;
-    worksheetData.push([]); // Empty row for separation
-    worksheetData.push(["Total Present", presentCount]);
-    worksheetData.push(["Total Absent", absentCount]);
+        // Calculate and append the counts at the end of the worksheet
+        const presentCount = worksheetData.filter(row => row[2] === "Present").length - 1; // Subtract header row
+        const absentCount = worksheetData.filter(row => row[2] === "Absent").length;
+        worksheetData.push([]); // Empty row for separation
+        worksheetData.push(["Total Present", presentCount]);
+        worksheetData.push(["Total Absent", absentCount]);
 
         // Create the worksheet and append it to the workbook
         const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
